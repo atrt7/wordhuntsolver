@@ -9,6 +9,11 @@
 
 #define MAXWORDLEN 20
 #define MINSOLUTIONLEN 3
+#define MAXCHILDREN 8
+
+#define GRID_ROWS 4
+#define GRID_COLS 4
+#define GRID_AREA (GRID_ROWS * GRID_COLS)
 
 char grid[4][4];
 
@@ -139,7 +144,8 @@ void countCharsInFile(char* path, int* numChars, int* numLines) {
 }
 
 int getDictionary(char* path) {
-    //TODO: only allocate words that have enough letters in the grid
+    //TODO: Only allocate words that have enough letters in the grid
+    //TODO: Get max word length here and put it into a global variable instead of a #define
     int numStrings = 0;
     int lineLength = 0;
 
@@ -203,13 +209,13 @@ bool areCharsNeigbors(char start, int startOccurence, char dest, int destOccuren
 }
 
 //unused
-int getNumChildren(int row, int col) {
+int getNumChildren(gridPoint point) {
     int numChildren = 0;
     for(int i = 0; i < 4; i++) {
         for(int j = 0; j < 4; j++) {
-            if(row == i && col == j) continue;
-            int rowDist = abs(row - i);
-            int colDist = abs(col - j);
+            if(point.row == i && point.col == j) continue;
+            int rowDist = abs(point.row - i);
+            int colDist = abs(point.col - j);
 
             if(rowDist <= 1 && colDist <= 1) {
                 numChildren++;
@@ -243,7 +249,7 @@ int getChildren(gridPoint point, char** children, gridPoint** points) {
         }
     }
 
-    assert(numChildren < 9);
+    assert(numChildren <= MAXCHILDREN);
 
     return numChildren;
 }
@@ -296,7 +302,7 @@ bool recursiveSolve(char* word, gridPoint point, int counter, gridPoint* path) {
     }
 
     if(path == NULL) {
-        path = malloc(17 * sizeof(gridPoint));
+        path = malloc(GRID_AREA * sizeof(gridPoint));
         if(path == NULL) {
             perror("Could not allocate enough memory for path!\n");
             exit(1);
@@ -305,12 +311,12 @@ bool recursiveSolve(char* word, gridPoint point, int counter, gridPoint* path) {
         firstCalled = true;
     }
 
-    char* children = (char*) calloc(10, sizeof(char));
+    char* children = (char*) calloc(MAXCHILDREN, sizeof(char));
     if(children == NULL) {
         perror("Could not allocate enough memory for children!\n");
         exit(1);
     }
-    gridPoint* childPoints = (gridPoint*) calloc(10, sizeof(gridPoint));
+    gridPoint* childPoints = (gridPoint*) calloc(MAXCHILDREN, sizeof(gridPoint));
     if(childPoints == NULL) {
         perror("Could not allocate enough memory for childPoints!\n");
         exit(1);
