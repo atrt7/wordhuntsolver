@@ -131,38 +131,32 @@ void countCharsInFile(char* path, int* numChars, int* numLines) {
 }
 
 int getDictionary(char* path) {
+    //TODO: only allocate words that have enough letters in the grid
     int numStrings = 0;
+    int lineLength = 0;
 
     //TODO: make sure path is valid before passing to fopen
     FILE* fp = fopen(path, "r");
+    assert(fp != NULL && "Dictionary could not be opened!");
 
-    if(fp == NULL) {
-        perror("Dictionary could not be opened!\n");
-        exit(1);
-    }
+    char line[MAXWORDLEN];
 
-    char* line = (char *) malloc(MAXWORDLEN * sizeof(char));
-    char* count = fgets(line, MAXWORDLEN, fp);
-    //int lineLength = strlen(line);
-    for(int i = 0; count != NULL; i++) {
-        if(line[strlen(line) - 1] == '\n') //remove newline character at the end of a word
-            line[strlen(line) - 1] = '\0';
+    while(fgets(line, MAXWORDLEN, fp) != NULL) {
+        lineLength = (int) strlen(line);
+
+        if(line[lineLength - 1] == '\n') //remove newline character at the end of a word
+            line[--lineLength] = '\0';
         //Needed for the strange Collins Scrabble Words (2019).txt because it has carriage returns
-        if(line[strlen(line) - 1] == '\r') //remove carriage return character at the end of a word
-            line[strlen(line) - 1] = '\0';
+        if(line[lineLength - 1] == '\r') //remove carriage return character at the end of a word
+            line[--lineLength] = '\0';
+
+        //dictWords[numStrings] = strndup(line, lineLength);
+        dictWords[numStrings] = strdup(line);
+        assert(dictWords[numStrings] != NULL && "Error allocating memory for words in dictionary!");
 
         numStrings++;
-        dictWords[i] = (char *) malloc(MAXWORDLEN * sizeof(char));
-        //dictWords[i] = (char *) malloc(strlen(line) * sizeof(char));
-        assert(dictWords[i] != NULL && "Error allocating memory for words in dictionary!");
-        /*if(dictWords[i] == NULL) {
-            perror("Error allocating memory for words in dictionary!\n");
-            exit(1);
-        }*/
-        strcpy(dictWords[i], line); //TODO: only allocate words that have enough letters in the grid
-        count = fgets(line, MAXWORDLEN, fp);
     }
-    free(line);
+
     fclose(fp);
     return numStrings;
 }
@@ -290,8 +284,6 @@ bool recursiveSolve(char* word, gridPoint point, int counter, gridPoint* path) {
     if(path == NULL) {
         path = malloc(17 * sizeof(gridPoint));
         assert(path != NULL);
-        //path[0].row = row;
-        //path[0].col = col;
         path[0] = point;
         firstCalled = true;
     }
@@ -303,144 +295,33 @@ bool recursiveSolve(char* word, gridPoint point, int counter, gridPoint* path) {
 
     numChildren = getChildren(point, &children, &childPoints);
 
-    //int numRepeatingChildren = charOccurencesInWord(children, word[counter+1]);
-
-    //gridPoint* filteredChildPoints = malloc(10 * sizeof(gridPoint));
-    //numChildren = filterChildren(word[counter+1], childPoints, numChildren, &filteredChildPoints);
-    //free(childPoints);
-
     //make a for loop to iterate through each occurrence of a letter
-    //for(int it = 0; it < charOccurencesInGrid(word[counter+1]); it++) {
-        for(int i = 0; i < numChildren; i++) {
-            assert(counter >= 0);
-            //if(childRows[i] == row && childCols[i] == col) {
-            if(grid[childPoints[i].row][childPoints[i].col] == word[counter+1]) {
-                for(int j = 0; j <= counter; j++) {
-                    //if(path[j].row == childPoints[i].row && path[j].col == childPoints[i].col) goto nextIteration;
-                    if(isGridPointEqual(path[j], childPoints[i])) goto nextIteration;
-                }
-                counter++;
-                path[counter].row = childPoints[i].row;
-                path[counter].col = childPoints[i].col;
-                if(recursiveSolve(word, childPoints[i], counter, path)) {
-                    if(firstCalled) free(path);
-                    free(children);
-                    free(childPoints);
-                    return true;
-                } else {
-                    //TODO: make the function backtrack and check children of previous point on the path
-                    path[counter] = (gridPoint) {-1, -1};
-                    counter--;
-                }
-            }
-            nextIteration:
-            continue;
-        }
-    //}
+    for(int i = 0; i < numChildren; i++) {
+        assert(counter >= 0);
 
-    /*for(int i = 0; i < numChildren; i++) {
-        for(int j = 0; j <= counter; j++) {
-            if(path[j].row == filteredChildPoints[i].row && path[j].col == filteredChildPoints[i].col) {
-                //if(firstCalled) free(path);
-                //free(children);
-                //free(filteredChildPoints);
-
-                //return false;
-                goto nextIteration;
-            }
-        }
-        counter++;
-        path[counter].row = filteredChildPoints[i].row;
-        path[counter].col = filteredChildPoints[i].col;
-        if(recursiveSolve(word,filteredChildPoints[i], counter, path)) {
-            if(firstCalled) free(path);
-            free(children);
-            free(filteredChildPoints);
-            return true;
-        } else {
-            //if(firstCalled) free(path);
-            //free(children);
-            //free(filteredChildPoints);
-
-            //return false;
-            goto nextIteration;
-        }
-        nextIteration:
-        continue;
-    }*/
-
-    /*for(int i = 0; i < numRepeatingChildren; i++) {
-        //if(childRows[i] == row && childCols[i] == col) {
-        if(grid[childRows[i]][childCols[i]] == word[counter+1]) {
+        if(grid[childPoints[i].row][childPoints[i].col] == word[counter+1]) {
             for(int j = 0; j <= counter; j++) {
-                if(path[j].row == childRows[i] && path[j].col == childCols[i]) {
-                    if(firstCalled) free(path);
-                    free(children);
-                    free(childRows);
-                    free(childCols);
-
-                    return false;
-                }
+                //if(path[j].row == childPoints[i].row && path[j].col == childPoints[i].col) goto nextIteration;
+                if(isGridPointEqual(path[j], childPoints[i])) goto nextIteration;
             }
             counter++;
-            path[counter].row = childRows[i];
-            path[counter].col = childCols[i];
-            if(recursiveSolve(word, childRows[i], childCols[i], counter, path)) {
-                if(firstCalled) free(path);
-                free(children);
-                free(childRows);
-                free(childCols);
-                return true;
-            } else {
-                if(firstCalled) free(path);
-                free(children);
-                free(childRows);
-                free(childCols);
-
-                return false;
-            }
-        }
-    }*/
-
-    /*for(int i = 0; i < numChildren; i++) {
-        //if(childRows[i] == row && childCols[i] == col) {
-        if(grid[childPoints[i].row][childPoints[i].col] == word[counter+1]) { //check if child is the next letter in the word
-            for(int j = 0; j <= counter; j++) {
-                if(path[j].row != childPoints[i].row || path[j].col != childPoints[i].col) {
-                    //return false;
-                    goto goodLetter;
-                }
-            }
-            if(firstCalled) free(path);
-            free(filteredChildPoints);
-            free(childPoints);
-
-            return false;
-
-            goodLetter:
-            counter++;
-            //path[counter].row = childPath[i].row;
-            //path[counter].col = childPath[i].col;
             path[counter] = childPoints[i];
             if(recursiveSolve(word, childPoints[i], counter, path)) {
                 if(firstCalled) free(path);
-                free(filteredChildPoints);
+                free(children);
                 free(childPoints);
                 return true;
             } else {
-                if(firstCalled) free(path);
-                free(children);
-                free(childPoints);
-
-                return false;
-                //goto nextChildIteration;
+                //TODO: make the function backtrack and check children of previous point on the path
+                path[counter] = (gridPoint) {-1, -1};
+                counter--;
             }
         }
-        nextChildIteration:
+        nextIteration:
         continue;
-    }*/
+    }
 
-    //noSolution:
+    //noSolution
     if(firstCalled) free(path);
     free(children);
     free(childPoints);
@@ -452,9 +333,6 @@ bool isWordPossible(char* word) {
     int startRow, startCol, curRow, curCol;
     gridPoint startPoint = {};
     if(strlen(word) < MINSOLUTIONLEN) return false;
-
-    //firstLetterOccurences = charOccurencesInGrid(word[0]);
-    //if(firstLetterOccurences < 1) return false;
 
     //return false if letter(s) in word are not in grid
     for(int i = 0; i < strlen(word); i++) {
@@ -470,8 +348,6 @@ bool isWordPossible(char* word) {
         findCharInGrid(word[0], &solvePoint, i+1);
         if(recursiveSolve(word, solvePoint, tempCounter, NULL))
             return true;
-        else
-            continue;
     }
 
     return false;
@@ -504,8 +380,10 @@ void solvePuzzle(int linesInDict) {
         if(isWordPossible(dictWords[i])) {
             numSolutions++;
             solutions = realloc(solutions, numSolutions * sizeof(char*));
-            solutions[solutionsIndex] = (char*) malloc(20 * sizeof(char));
-            strcpy(solutions[solutionsIndex], dictWords[i]);
+            //solutions[solutionsIndex] = (char*) malloc(20 * sizeof(char));
+            //strcpy(solutions[solutionsIndex], dictWords[i]);
+            solutions[solutionsIndex] = strdup(dictWords[i]);
+            assert(solutions[solutionsIndex] != NULL && "Could not allocate enough memory for solutions!");
             solutionsIndex++;
         }
     }
@@ -522,13 +400,12 @@ int main(int argc, char** argv) {
     //TODO: Use realloc in getDictionary() and only allocate words that have enough letters in the grid
     //put words from dictionary text file into a string array, char**
     dictWords = (char**) malloc(linesInDict * sizeof(char*));
-    //dictWords = (char**) malloc(32 * sizeof(char*));
-    if(dictWords == NULL) {
-        perror("Error allocating memory for initialization of dictionary!\n");
-        exit(1);
-    }
+    assert(dictWords != NULL && "Error allocating memory for initialization of dictionary!");
+
     int numStrings = getDictionary("./colins-scrabble-dictionary.txt");
     //int numStrings = getDictionary("./collins-scrabble-words-2019.txt");
+
+    printf("numStrings: %d\tlinesInDict: %d\n", numStrings, linesInDict);
 
     initializeGrid();
 
