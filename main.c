@@ -28,11 +28,15 @@ bool isGridPointEqual(gridPoint a, gridPoint b) {
 }
 
 void initializeGrid() {
+    //TODO: Make sure all characters read are valid letters
     //get grid from text file and put it into a double array
     memset(grid, 0, 16 * sizeof(char));
 
     FILE* fp = fopen("./grid.txt", "r");
-    assert(fp != NULL && "Could not open grid file!");
+    if(fp == NULL) {
+        perror("Could not open grid file!\n");
+        exit(1);
+    }
 
     char c = (char) fgetc(fp);
 
@@ -44,6 +48,7 @@ void initializeGrid() {
             c = (char) fgetc(fp);
         }
     }
+
     fclose(fp);
 }
 
@@ -116,7 +121,10 @@ void countCharsInFile(char* path, int* numChars, int* numLines) {
 
     //TODO: check if path is valid
     FILE* fp = fopen(path, "r");
-    assert(fp != NULL && "dictionary could not be opened!");
+    if(fp == NULL) {
+        perror("File could not be opened!\n");
+        exit(1);
+    }
 
     char c = (char) fgetc(fp);
 
@@ -137,7 +145,10 @@ int getDictionary(char* path) {
 
     //TODO: make sure path is valid before passing to fopen
     FILE* fp = fopen(path, "r");
-    assert(fp != NULL && "Dictionary could not be opened!");
+    if(fp == NULL) {
+        perror("Dictionary could not be opened!\n");
+        exit(1);
+    }
 
     char line[MAXWORDLEN];
 
@@ -152,7 +163,10 @@ int getDictionary(char* path) {
 
         //dictWords[numStrings] = strndup(line, lineLength);
         dictWords[numStrings] = strdup(line);
-        assert(dictWords[numStrings] != NULL && "Error allocating memory for words in dictionary!");
+        if(dictWords[numStrings] == NULL) {
+            perror("Error allocating memory for words in dictionary!\n");
+            exit(1);
+        }
 
         numStrings++;
     }
@@ -283,15 +297,24 @@ bool recursiveSolve(char* word, gridPoint point, int counter, gridPoint* path) {
 
     if(path == NULL) {
         path = malloc(17 * sizeof(gridPoint));
-        assert(path != NULL);
+        if(path == NULL) {
+            perror("Could not allocate enough memory for path!\n");
+            exit(1);
+        }
         path[0] = point;
         firstCalled = true;
     }
 
     char* children = (char*) calloc(10, sizeof(char));
-    assert(children != NULL);
+    if(children == NULL) {
+        perror("Could not allocate enough memory for children!\n");
+        exit(1);
+    }
     gridPoint* childPoints = (gridPoint*) calloc(10, sizeof(gridPoint));
-    assert(childPoints != NULL);
+    if(childPoints == NULL) {
+        perror("Could not allocate enough memory for childPoints!\n");
+        exit(1);
+    }
 
     numChildren = getChildren(point, &children, &childPoints);
 
@@ -383,7 +406,10 @@ void solvePuzzle(int linesInDict) {
             //solutions[solutionsIndex] = (char*) malloc(20 * sizeof(char));
             //strcpy(solutions[solutionsIndex], dictWords[i]);
             solutions[solutionsIndex] = strdup(dictWords[i]);
-            assert(solutions[solutionsIndex] != NULL && "Could not allocate enough memory for solutions!");
+            if(solutions[solutionsIndex] == NULL) {
+                perror("Could not allocate enough memory for solutions!\n");
+                exit(1);
+            }
             solutionsIndex++;
         }
     }
@@ -400,7 +426,10 @@ int main(int argc, char** argv) {
     //TODO: Use realloc in getDictionary() and only allocate words that have enough letters in the grid
     //put words from dictionary text file into a string array, char**
     dictWords = (char**) malloc(linesInDict * sizeof(char*));
-    assert(dictWords != NULL && "Error allocating memory for initialization of dictionary!");
+    if(dictWords == NULL) {
+        perror("Error allocating memory for initialization of dictionary!\n");
+        exit(1);
+    }
 
     int numStrings = getDictionary("./colins-scrabble-dictionary.txt");
     //int numStrings = getDictionary("./collins-scrabble-words-2019.txt");
@@ -418,7 +447,7 @@ int main(int argc, char** argv) {
     solutions = (char**) malloc(sizeof(char*));
     solvePuzzle(linesInDict);
     printPuzzle();
-    printf("Solutions: %d", numSolutions);
+    printf("Solutions: %d\n", numSolutions);
 
     freeSolutions();
     freeDict(numStrings);
